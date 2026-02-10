@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AES-GCM 本地文件加解密工具</title>
+    <title>AES-GCM 文件保險箱 V2 (EXE修復版)</title>
     <style>
         :root {
-            --bg-color: #1a1a1a;
-            --card-bg: #2d2d2d;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
             --text-main: #e0e0e0;
-            --accent-enc: #ff4757;
-            --accent-dec: #2ed573;
+            --accent-enc: #ff5252;
+            --accent-dec: #00e676;
             --border-radius: 12px;
         }
 
@@ -27,7 +27,7 @@
             padding: 20px;
         }
 
-        h1 { margin-bottom: 10px; font-weight: 300; letter-spacing: 1px; }
+        h1 { margin-bottom: 5px; font-weight: 300; letter-spacing: 1px; }
         p.subtitle { color: #888; font-size: 0.9rem; margin-bottom: 30px; }
 
         .container {
@@ -47,143 +47,147 @@
             border: 2px dashed #444;
             text-align: center;
             transition: all 0.3s ease;
-            position: relative;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
 
+        .drop-zone:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .drop-zone.dragover { transform: scale(1.02); border-color: #fff; }
         
-        /* 加密區樣式 */
-        .zone-encrypt:hover, .zone-encrypt.dragover { border-color: var(--accent-enc); box-shadow: 0 0 15px rgba(255, 71, 87, 0.2); }
+        .zone-encrypt:hover, .zone-encrypt.dragover { border-color: var(--accent-enc); }
         .icon-enc { font-size: 3rem; color: var(--accent-enc); margin-bottom: 15px; }
 
-        /* 解密區樣式 */
-        .zone-decrypy:hover, .zone-decrypy.dragover { border-color: var(--accent-dec); box-shadow: 0 0 15px rgba(46, 213, 115, 0.2); }
+        .zone-decrypy:hover, .zone-decrypy.dragover { border-color: var(--accent-dec); }
         .icon-dec { font-size: 3rem; color: var(--accent-dec); margin-bottom: 15px; }
-
-        .btn-select {
-            margin-top: 15px;
-            padding: 8px 20px;
-            background: #444;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            pointer-events: none; /* 讓點擊事件穿透到父層 */
-        }
 
         .password-section {
             width: 100%;
             max-width: 900px;
             margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
         }
 
         input[type="password"] {
             width: 100%;
             padding: 15px;
             border-radius: var(--border-radius);
-            border: 1px solid #444;
-            background: var(--card-bg);
+            border: 1px solid #333;
+            background: #252525;
             color: white;
             font-size: 1.1rem;
             outline: none;
             box-sizing: border-box;
             text-align: center;
             letter-spacing: 2px;
+            transition: border 0.3s;
         }
-        input[type="password"]:focus { border-color: #0984e3; }
+        input[type="password"]:focus { border-color: #0984e3; box-shadow: 0 0 10px rgba(9, 132, 227, 0.2); }
 
         #log-area {
             width: 100%;
             max-width: 900px;
             margin-top: 20px;
-            font-family: monospace;
+            font-family: 'Consolas', monospace;
             font-size: 0.85rem;
-            color: #888;
-            text-align: left;
-            max-height: 150px;
+            color: #aaa;
+            max-height: 200px;
             overflow-y: auto;
-            background: #222;
-            padding: 10px;
+            background: #181818;
+            padding: 15px;
             border-radius: 8px;
+            border: 1px solid #333;
         }
-        .log-item { margin: 5px 0; border-bottom: 1px solid #333; padding-bottom: 2px; }
+        .log-item { margin: 6px 0; border-bottom: 1px solid #2a2a2a; padding-bottom: 4px; display: flex; justify-content: space-between; }
         .log-success { color: var(--accent-dec); }
         .log-error { color: var(--accent-enc); }
+        .log-info { color: #74b9ff; }
+        
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* 隱藏原生 input */
         input[type="file"] { display: none; }
     </style>
 </head>
 <body>
 
-    <h1>Secure File Locker</h1>
-    <p class="subtitle">AES-GCM 256-bit 加密 | 本地端運算 | 無需上傳</p>
+    <h1>File Locker V2</h1>
+    <p class="subtitle">針對 EXE 優化版 | 自動處理瀏覽器攔截</p>
 
     <div class="password-section">
-        <input type="password" id="password" placeholder="請在此輸入密碼 (加解密通用)" autocomplete="off">
+        <input type="password" id="password" placeholder="請設定密碼 (Password)" autocomplete="off">
     </div>
 
     <div class="container">
         <div class="drop-zone zone-encrypt" id="drop-enc" onclick="document.getElementById('file-enc').click()">
             <div class="icon-enc">🔒</div>
-            <h2>拖曳文件加密</h2>
-            <p>或點擊選擇文件</p>
+            <h2>加密 EXE/文件</h2>
+            <p>將自動添加 .locked 後綴以防止攔截</p>
             <input type="file" id="file-enc" multiple>
         </div>
 
         <div class="drop-zone zone-decrypy" id="drop-dec" onclick="document.getElementById('file-dec').click()">
             <div class="icon-dec">🔓</div>
-            <h2>拖曳文件解密</h2>
-            <p>或點擊選擇文件</p>
+            <h2>解密還原</h2>
+            <p>自動移除 .locked 還原原檔</p>
             <input type="file" id="file-dec" multiple>
         </div>
     </div>
 
-    <div id="log-area">等待操作...</div>
+    <div id="log-area">
+        <div>[System] 準備就緒。請輸入密碼後拖曳文件。</div>
+    </div>
 
 <script>
     // --- 核心配置 ---
-    const PBKDF2_ITERATIONS = 100000; // 迭代次數，越高越安全但越慢
+    const PBKDF2_ITERATIONS = 100000; 
     const SALT_LENGTH = 16;
-    const IV_LENGTH = 12; // AES-GCM 標準 IV 長度
+    const IV_LENGTH = 12;
     
-    // --- 工具函數 ---
+    // --- UI 工具 ---
     const log = (msg, type = 'info') => {
         const area = document.getElementById('log-area');
         const div = document.createElement('div');
-        div.className = 'log-item ' + (type === 'error' ? 'log-error' : (type === 'success' ? 'log-success' : ''));
-        div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        area.prepend(div); // 最新訊息在最上方
+        div.className = 'log-item ' + (type === 'error' ? 'log-error' : (type === 'success' ? 'log-success' : 'log-info'));
+        div.innerHTML = `<span>${msg}</span> <span>${new Date().toLocaleTimeString()}</span>`;
+        area.prepend(div);
     };
 
     const getPassword = () => {
         const pwd = document.getElementById('password').value;
         if (!pwd) {
-            alert("錯誤：請先輸入密碼！");
+            alert("⚠️ 請先輸入密碼！");
             return null;
         }
         return pwd;
     };
 
-    const downloadFile = (data, filename) => {
-        const blob = new Blob([data], { type: "application/octet-stream" });
+    // 觸發下載
+    const triggerDownload = (blob, filename) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        
+        // 延遲釋放，確保下載開始
+        setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }, 1000);
     };
 
-    // --- 密碼學核心邏輯 (Web Crypto API) ---
-
-    // 1. 從密碼生成金鑰 (PBKDF2 -> AES-GCM)
+    // --- 密碼學核心 ---
     async function deriveKey(password, salt) {
         const enc = new TextEncoder();
         const keyMaterial = await window.crypto.subtle.importKey(
@@ -203,126 +207,126 @@
         );
     }
 
-    // 2. 加密處理
+    // --- 加密邏輯 (強制添加後綴) ---
     async function processEncrypt(file) {
         const password = getPassword();
         if (!password) return;
 
         try {
-            log(`開始加密: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`, 'info');
+            log(`<span class="spinner"></span>正在加密: ${file.name} (${(file.size/1024/1024).toFixed(1)} MB)...`, 'info');
             
-            const fileData = await file.arrayBuffer();
+            // 使用 FileReader 讀取 (相容性更好)
+            const fileData = await readFileAsync(file);
             
-            // 生成隨機 Salt 和 IV
             const salt = window.crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
             const iv = window.crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-            
-            // 導出金鑰
             const key = await deriveKey(password, salt);
             
-            // 執行 AES-GCM 加密
             const encryptedContent = await window.crypto.subtle.encrypt(
                 { name: "AES-GCM", iv: iv },
                 key,
                 fileData
             );
 
-            // 組合文件: [Salt(16)] + [IV(12)] + [EncryptedData]
-            // 使用 Blob 組合可以有效管理記憶體
-            const finalBlob = new Blob([salt, iv, encryptedContent]);
+            const finalBlob = new Blob([salt, iv, encryptedContent], { type: "application/octet-stream" });
             
-            // 下載 (保持原檔名)
-            downloadFile(finalBlob, file.name);
-            log(`加密成功: ${file.name}`, 'success');
+            // 策略：強制添加 .locked 以避開瀏覽器對 .exe 的攔截
+            let downloadName = file.name;
+            if (!downloadName.endsWith(".locked")) {
+                downloadName += ".locked";
+            }
+            
+            triggerDownload(finalBlob, downloadName);
+            log(`✅ 加密成功，已下載: ${downloadName}`, 'success');
 
         } catch (e) {
             console.error(e);
-            log(`加密失敗 ${file.name}: ${e.message}`, 'error');
+            log(`❌ 加密失敗: ${e.message}`, 'error');
+            if (e.message.includes("large")) {
+                log(`💡 提示: 瀏覽器記憶體不足，請嘗試使用批次檔版本處理大文件。`, 'info');
+            }
         }
     }
 
-    // 3. 解密處理
+    // --- 解密邏輯 (自動移除後綴) ---
     async function processDecrypt(file) {
         const password = getPassword();
         if (!password) return;
 
         try {
-            log(`開始解密: ${file.name}`, 'info');
-            const fileData = await file.arrayBuffer(); // 讀取整個文件到記憶體
+            log(`<span class="spinner"></span>正在解密: ${file.name}...`, 'info');
+            const fileData = await readFileAsync(file);
 
-            // 檢查長度
-            if (fileData.byteLength < SALT_LENGTH + IV_LENGTH) {
-                throw new Error("文件格式錯誤或過小");
-            }
+            if (fileData.byteLength < SALT_LENGTH + IV_LENGTH) throw new Error("文件過小，非有效加密檔");
 
-            // 提取 Salt, IV, Ciphertext
             const salt = fileData.slice(0, SALT_LENGTH);
             const iv = fileData.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
             const data = fileData.slice(SALT_LENGTH + IV_LENGTH);
 
-            // 導出金鑰
             const key = await deriveKey(password, salt);
 
-            // 執行 AES-GCM 解密
             const decryptedContent = await window.crypto.subtle.decrypt(
                 { name: "AES-GCM", iv: iv },
                 key,
                 data
             );
 
-            // 下載 (保持原檔名)
-            // 這裡我們假設用戶知道這個文件原本是什麼。
-            // 由於輸入也是原檔名，輸出也是原檔名。
-            downloadFile(decryptedContent, file.name);
-            log(`解密成功: ${file.name}`, 'success');
+            // 策略：如果原檔名有 .locked，則移除它；否則保持原名
+            let downloadName = file.name;
+            if (downloadName.endsWith(".locked")) {
+                downloadName = downloadName.slice(0, -7); // 移除 .locked
+            } else if (downloadName.endsWith(".enc")) {
+                downloadName = downloadName.slice(0, -4);
+            }
+
+            const finalBlob = new Blob([decryptedContent], { type: "application/octet-stream" });
+            triggerDownload(finalBlob, downloadName);
+            
+            log(`✅ 解密成功，已還原: ${downloadName}`, 'success');
+            
+            // 針對還原後的 EXE 發出提示
+            if (downloadName.toLowerCase().endsWith(".exe")) {
+                log(`⚠️ 注意: 如果瀏覽器攔截了 ${downloadName}，請至下載頁面點擊「保留文件」。`, 'info');
+            }
 
         } catch (e) {
             console.error(e);
             if (e.name === "OperationError") {
-                log(`解密失敗: 密碼錯誤或文件已損壞 (驗證失敗)`, 'error');
+                log(`⛔ 密碼錯誤 或 文件完整性校驗失敗`, 'error');
             } else {
-                log(`解密失敗 ${file.name}: ${e.message}`, 'error');
+                log(`❌ 解密失敗: ${e.message}`, 'error');
             }
         }
     }
 
-    // --- 事件監聽 ---
-    
+    // Promise wrapper for FileReader
+    function readFileAsync(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    // --- 事件綁定 ---
     function setupZone(zoneId, inputId, actionFunc) {
         const zone = document.getElementById(zoneId);
         const input = document.getElementById(inputId);
 
-        // 拖曳視覺效果
-        zone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            zone.classList.add('dragover');
-        });
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
         zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-        
-        // 拖曳釋放 (Drop)
         zone.addEventListener('drop', (e) => {
             e.preventDefault();
             zone.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            handleFiles(files, actionFunc);
+            Array.from(e.dataTransfer.files).forEach(actionFunc);
         });
-
-        // 點擊選擇文件
         input.addEventListener('change', (e) => {
-            handleFiles(e.target.files, actionFunc);
-            input.value = ''; // 重置 input 允許重複選擇同個文件
+            Array.from(e.target.files).forEach(actionFunc);
+            input.value = '';
         });
     }
 
-    async function handleFiles(files, actionFunc) {
-        if (files.length === 0) return;
-        // 轉換為 Array 並逐個處理
-        for (const file of Array.from(files)) {
-            await actionFunc(file);
-        }
-    }
-
-    // 初始化
     setupZone('drop-enc', 'file-enc', processEncrypt);
     setupZone('drop-dec', 'file-dec', processDecrypt);
 
