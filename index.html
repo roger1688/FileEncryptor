@@ -3,153 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AES-GCM 隱形加密工具 (V4 Stealth)</title>
+    <title>AES-GCM 智能簽名加密工具 (V5)</title>
     <style>
         :root {
-            --bg-color: #000000;
-            --card-bg: #111111;
-            --text-main: #d0d0d0;
-            --accent-enc: #ff3b30;
-            --accent-dec: #4cd964;
-            --border-radius: 8px;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-enc: #ff5252;
+            --accent-dec: #69f0ae;
         }
-
         body {
-            font-family: 'Consolas', 'Monaco', monospace; /* 使用等寬字體強調駭客風格 */
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
+            font-family: 'Segoe UI', Consolas, sans-serif;
+            background: var(--bg-color); color: var(--text-color);
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; margin: 0; padding: 20px;
         }
-
-        h1 { font-weight: bold; letter-spacing: 2px; margin-bottom: 5px; color: #fff; }
-        .warning { color: #ff9f43; font-size: 0.9rem; margin-bottom: 20px; border: 1px solid #ff9f43; padding: 5px 10px; border-radius: 4px; }
+        h1 { font-weight: 300; letter-spacing: 2px; color: #fff; margin-bottom: 5px; }
+        .badge { background: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #03a9f4; }
         
-        .container {
-            display: flex;
-            gap: 20px;
-            width: 100%;
-            max-width: 900px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-
+        .container { display: flex; gap: 20px; width: 100%; max-width: 900px; margin-top: 20px; flex-wrap: wrap; }
+        
         .drop-zone {
-            flex: 1;
-            min-width: 300px;
-            background: var(--card-bg);
-            padding: 40px 20px;
-            border-radius: var(--border-radius);
-            border: 2px dashed #333;
-            text-align: center;
-            transition: all 0.2s ease;
-            cursor: pointer;
+            flex: 1; min-width: 300px; background: var(--card-bg);
+            padding: 40px 20px; border-radius: 12px; border: 2px dashed #444;
+            text-align: center; cursor: pointer; transition: 0.2s;
         }
-        .drop-zone:hover { border-color: #666; background: #161616; }
-        
-        .zone-enc:hover { border-color: var(--accent-enc); }
-        .zone-dec:hover { border-color: var(--accent-dec); }
+        .drop-zone:hover { transform: translateY(-3px); }
+        .enc-zone:hover { border-color: var(--accent-enc); box-shadow: 0 5px 15px rgba(255, 82, 82, 0.2); }
+        .dec-zone:hover { border-color: var(--accent-dec); box-shadow: 0 5px 15px rgba(105, 240, 174, 0.2); }
 
-        .icon { font-size: 2.5rem; margin-bottom: 15px; }
-        h2 { margin: 10px 0; font-size: 1.2rem; color: #fff; }
-        p { color: #666; font-size: 0.85rem; }
+        .icon { font-size: 3rem; margin-bottom: 10px; }
+        h2 { margin: 10px 0; font-size: 1.2rem; }
+        p { color: #888; font-size: 0.9rem; }
 
-        /* 密碼區 */
-        .input-group { width: 100%; max-width: 900px; margin-bottom: 15px; }
+        .input-group { width: 100%; max-width: 900px; margin-bottom: 10px; }
         input[type="password"] {
-            width: 100%; box-sizing: border-box; padding: 15px;
-            background: #1a1a1a; border: 1px solid #333; color: white;
-            border-radius: var(--border-radius); font-size: 1.1rem; text-align: center; letter-spacing: 3px;
-            font-family: monospace;
-            transition: 0.3s;
+            width: 100%; padding: 15px; background: #2c2c2c; border: 1px solid #444;
+            color: #fff; border-radius: 8px; text-align: center; font-size: 1.1rem;
+            box-sizing: border-box; transition: 0.3s;
         }
-        input[type="password"]:focus { border-color: #fff; outline: none; }
+        input[type="password"]:focus { border-color: #03a9f4; outline: none; }
 
-        /* 進度條 */
-        #progress-container {
-            width: 100%; max-width: 900px; margin-top: 20px;
-            background: #222; border-radius: 4px;
-            height: 4px; overflow: hidden; display: none;
-        }
-        #progress-bar {
-            height: 100%; width: 0%; background: #fff;
-            transition: width 0.1s linear;
-        }
-        #status-text { margin-top: 10px; color: #666; font-size: 0.8rem; }
-
-        /* 日誌 */
         #log-area {
             width: 100%; max-width: 900px; margin-top: 20px;
-            background: #050505; padding: 15px; border-radius: 4px;
-            font-size: 0.8rem; color: #555;
-            max-height: 150px; overflow-y: auto; border: 1px solid #222;
+            background: #000; padding: 15px; border-radius: 8px;
+            font-family: monospace; font-size: 0.9rem; color: #bbb;
+            min-height: 100px; max-height: 200px; overflow-y: auto; border: 1px solid #333;
         }
-        .log-err { color: var(--accent-enc); }
-        .log-ok { color: var(--accent-dec); }
+        .err { color: var(--accent-enc); }
+        .ok { color: var(--accent-dec); }
+        .info { color: #03a9f4; }
+
+        #progress-bar { width: 100%; max-width: 900px; height: 4px; background: #333; margin-top: 20px; display: none; }
+        #progress-fill { height: 100%; width: 0%; background: #03a9f4; transition: width 0.1s; }
 
         input[type="file"] { display: none; }
     </style>
 </head>
 <body>
 
-    <h1>STEALTH ENCRYPTOR <span style="font-size:0.5em; vertical-align:middle; color:#666">V4</span></h1>
-    <div class="warning">⚠️ 注意：存檔時請勿覆蓋原檔，否則數據將永久丟失。</div>
+    <h1>FILE VAULT <span class="badge">V5 SIGNATURE</span></h1>
+    <p style="color:#666; margin-bottom: 20px;">支援無限大檔案 • 智能識別加密檔 • 隱形模式</p>
 
     <div class="input-group">
-        <input type="password" id="password" placeholder="ENTER PASSWORD" autocomplete="off">
+        <input type="password" id="password" placeholder="請輸入密碼 (PASSWORD)" autocomplete="off">
     </div>
 
     <div class="container">
-        <div class="drop-zone zone-enc" id="drop-enc">
+        <div class="drop-zone enc-zone" id="drop-enc">
             <div class="icon">🔒</div>
-            <h2>加密 (保持原檔名)</h2>
-            <p>輸出檔名與原檔相同</p>
+            <h2>加密 (Encrypt)</h2>
+            <p>即使檔名不變，我們也會加上隱形簽名</p>
             <input type="file" id="file-enc">
         </div>
 
-        <div class="drop-zone zone-dec" id="drop-dec">
+        <div class="drop-zone dec-zone" id="drop-dec">
             <div class="icon">🔓</div>
-            <h2>解密還原</h2>
-            <p>自動識別加密結構</p>
+            <h2>解密 (Decrypt)</h2>
+            <p>自動檢測是否為加密檔案</p>
             <input type="file" id="file-dec">
         </div>
     </div>
 
-    <div id="progress-container"><div id="progress-bar"></div></div>
-    <div id="status-text">WAITING FOR INPUT...</div>
-    <div id="log-area"></div>
+    <div id="progress-bar"><div id="progress-fill"></div></div>
+    <div id="log-area"><div class="info">> 系統就緒。請使用 Chrome/Edge 電腦版。</div></div>
 
 <script>
     // --- 核心配置 ---
-    const CHUNK_SIZE = 1024 * 1024 * 32; // 32MB Chunk
+    const CHUNK_SIZE = 1024 * 1024 * 16; // 16MB 分塊
     const PBKDF2_ITERATIONS = 100000;
+    const MAGIC_SIG = new TextEncoder().encode("GEM_LOCK"); // 8 bytes 簽名
     const SALT_LEN = 16;
     const IV_LEN = 12;
 
     // --- UI Helpers ---
     const ui = {
-        log: (msg, type='') => {
+        log: (msg, type) => {
             const el = document.getElementById('log-area');
-            el.innerHTML = `<div class="${type === 'err' ? 'log-err' : (type === 'ok' ? 'log-ok' : '')}">> ${msg}</div>` + el.innerHTML;
+            el.innerHTML = `<div class="${type}">[${new Date().toLocaleTimeString()}] ${msg}</div>` + el.innerHTML;
         },
-        status: (msg) => document.getElementById('status-text').textContent = msg,
-        progress: (percent) => {
-            const bar = document.getElementById('progress-container');
-            bar.style.display = percent >= 0 ? 'block' : 'none';
-            document.getElementById('progress-bar').style.width = percent + '%';
+        progress: (pct) => {
+            const bar = document.getElementById('progress-bar');
+            bar.style.display = pct >= 0 ? 'block' : 'none';
+            document.getElementById('progress-fill').style.width = pct + '%';
         }
     };
 
-    if (!window.showSaveFilePicker) {
-        alert("⚠️ 錯誤：您的瀏覽器不支援 FileSystem API。\n請使用電腦版 Chrome, Edge 或 Opera。");
-    }
+    if (!window.showSaveFilePicker) alert("⚠️ 錯誤：請使用 Chrome 或 Edge 瀏覽器以支援大檔案寫入。");
 
-    // --- Crypto Core ---
+    // --- 加密核心 ---
     async function deriveKey(password, salt) {
         const enc = new TextEncoder();
         const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), {name: "PBKDF2"}, false, ["deriveKey"]);
@@ -159,38 +121,38 @@
         );
     }
 
-    // --- Encryption (No Suffix) ---
+    // --- 加密流程 ---
     async function encryptFile(file) {
         const password = document.getElementById('password').value;
-        if (!password) return alert("請輸入密碼！");
+        if (!password) return ui.log("❌ 錯誤：密碼不能為空", "err");
 
         try {
-            // [修改點] 建議檔名直接使用原檔名，不加 .locked
-            const newHandle = await window.showSaveFilePicker({
-                suggestedName: file.name, 
-            });
-            
-            // 檢查是否選到了原檔 (簡單檢查，不保證完全防止)
-            try {
-                const checkFile = await newHandle.getFile();
-                if (checkFile.name === file.name && checkFile.size === file.size && checkFile.lastModified === file.lastModified) {
-                    if(!confirm("⚠️ 警告：您似乎選擇了覆蓋原始檔案！\n如果加密過程中斷，原檔將損壞。\n確定要繼續嗎？")) return;
-                }
-            } catch(e) {}
+            // 檢查是否已經被加密過 (防止重複加密)
+            const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+            if (head.every((val, i) => val === MAGIC_SIG[i])) {
+                if(!confirm("⚠️ 警告：此檔案似乎已經加密過了！\n再次加密會導致「雙重加密」，解密會非常麻煩。\n確定要繼續嗎？")) return;
+            }
 
+            const newHandle = await window.showSaveFilePicker({ suggestedName: file.name });
             const writable = await newHandle.createWritable();
 
-            ui.log(`加密開始: ${file.name} -> ${newHandle.name}`, 'normal');
+            ui.log(`🔒 開始加密: ${file.name}`, "info");
             ui.progress(0);
 
+            // 1. 寫入 MAGIC SIGNATURE (8 bytes)
+            await writable.write(MAGIC_SIG);
+
+            // 2. 生成並寫入 Salt (16 bytes)
             const salt = crypto.getRandomValues(new Uint8Array(SALT_LEN));
             await writable.write(salt);
-            const key = await deriveKey(password, salt);
 
+            const key = await deriveKey(password, salt);
             const stream = file.stream();
             const reader = stream.getReader();
-            let processed = 0;
+            
+            // 3. 緩衝讀取迴圈
             let buffer = new Uint8Array(0);
+            let processed = 0;
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -208,67 +170,82 @@
 
                     const iv = crypto.getRandomValues(new Uint8Array(IV_LEN));
                     const encryptedChunk = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, chunk);
-                    const lenArr = new Uint32Array([encryptedChunk.byteLength]);
                     
+                    // 格式: [IV 12] + [Len 4] + [Data]
                     await writable.write(iv);
-                    await writable.write(lenArr);
+                    await writable.write(new Uint32Array([encryptedChunk.byteLength]));
                     await writable.write(encryptedChunk);
 
                     processed += sliceLen;
-                    ui.status(`Encrypting... ${(processed / 1024 / 1024).toFixed(0)} MB`);
                     ui.progress((processed / file.size) * 100);
-
                     if (buffer.length === 0 && done) break;
                 }
                 if (done) break;
             }
-
             await writable.close();
-            ui.log("✅ 加密完成 (已儲存)", 'ok');
+            ui.log("✅ 加密成功！檔案已簽名。", "ok");
             ui.progress(-1);
-            ui.status("IDLE");
 
         } catch (e) {
             console.error(e);
-            ui.log("❌ 失敗: " + e.message, 'err');
+            ui.log(`❌ 加密失敗: ${e.message}`, "err");
             ui.progress(-1);
         }
     }
 
-    // --- Decryption ---
+    // --- 解密流程 ---
     async function decryptFile(file) {
         const password = document.getElementById('password').value;
-        if (!password) return alert("請輸入密碼！");
+        if (!password) return ui.log("❌ 錯誤：密碼不能為空", "err");
 
         try {
-            // [修改點] 由於輸入檔名沒有後綴，解密時為了安全，建議加上 "decrypted_" 前綴
-            // 避免用戶直接覆蓋掉加密的原檔
-            const newHandle = await window.showSaveFilePicker({ 
-                suggestedName: "decrypted_" + file.name 
-            });
-            const writable = await newHandle.createWritable();
+            ui.log(`🔍 分析檔案: ${file.name}`, "info");
+            
+            // 1. 驗證 MAGIC SIGNATURE
+            // 如果這一步失敗，代表用戶選錯檔案，或選到了未加密的原檔
+            const sigBlob = file.slice(0, 8);
+            const sigData = new Uint8Array(await sigBlob.arrayBuffer());
+            
+            // 比對簽名
+            const isEncrypted = sigData.every((val, i) => val === MAGIC_SIG[i]);
+            if (!isEncrypted) {
+                throw new Error("此檔案「不是」本工具加密的檔案！(找不到 GEM_LOCK 簽名)");
+            }
 
-            ui.log(`解密開始: ${file.name}`, 'normal');
+            const newHandle = await window.showSaveFilePicker({ suggestedName: "decrypted_" + file.name });
+            const writable = await newHandle.createWritable();
+            ui.log(`🔓 簽名驗證通過，開始解密...`, "info");
             ui.progress(0);
 
-            let offset = 0;
-            const saltBlob = file.slice(0, SALT_LEN);
+            // 2. 讀取 Salt (Offset 8 ~ 24)
+            let offset = 8;
+            const saltBlob = file.slice(offset, offset + SALT_LEN);
             const salt = new Uint8Array(await saltBlob.arrayBuffer());
             offset += SALT_LEN;
 
             const key = await deriveKey(password, salt);
             const totalSize = file.size;
 
+            // 3. 解密迴圈
             while (offset < totalSize) {
+                // 讀 IV
+                if (offset + IV_LEN > totalSize) break;
                 const ivBlob = file.slice(offset, offset + IV_LEN);
                 const iv = new Uint8Array(await ivBlob.arrayBuffer());
                 offset += IV_LEN;
 
+                // 讀長度
                 const lenBlob = file.slice(offset, offset + 4);
                 const lenArr = new Uint32Array(await lenBlob.arrayBuffer());
                 const chunkLen = lenArr[0];
                 offset += 4;
 
+                // 安全性檢查
+                if (chunkLen > CHUNK_SIZE + 1024 || chunkLen <= 0) {
+                     throw new Error("檔案結構損壞 (區塊長度異常)");
+                }
+
+                // 讀數據
                 const dataBlob = file.slice(offset, offset + chunkLen);
                 const data = await dataBlob.arrayBuffer();
                 offset += chunkLen;
@@ -277,39 +254,32 @@
                     const decryptedChunk = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data);
                     await writable.write(decryptedChunk);
                 } catch (e) {
-                    throw new Error("密碼錯誤 或 檔案非本工具加密");
+                    throw new Error("密碼錯誤 (AES-GCM 驗證失敗)");
                 }
 
-                ui.status(`Decrypting... ${(offset / 1024 / 1024).toFixed(0)} MB`);
                 ui.progress((offset / totalSize) * 100);
             }
 
             await writable.close();
-            ui.log("✅ 解密完成", 'ok');
+            ui.log("✅ 解密成功！", "ok");
             ui.progress(-1);
-            ui.status("IDLE");
 
         } catch (e) {
             console.error(e);
-            ui.log("❌ 失敗: " + e.message, 'err');
+            ui.log(`❌ 解密失敗: ${e.message}`, "err");
             ui.progress(-1);
         }
     }
 
-    // --- Events ---
+    // --- 事件 ---
     const setup = (id, fn) => {
         const el = document.getElementById(id);
-        const input = el.querySelector('input');
-        el.onclick = () => input.click();
-        input.onchange = (e) => { if(e.target.files[0]) fn(e.target.files[0]); input.value=''; };
-        el.ondragover = (e) => { e.preventDefault(); el.style.borderColor = '#fff'; };
-        el.ondragleave = () => { el.style.borderColor = '#333'; };
-        el.ondrop = (e) => { 
-            e.preventDefault(); el.style.borderColor = '#333';
-            if(e.dataTransfer.files[0]) fn(e.dataTransfer.files[0]);
-        };
+        const inp = el.querySelector('input');
+        el.onclick = () => inp.click();
+        inp.onchange = (e) => { if(e.target.files[0]) fn(e.target.files[0]); inp.value=''; };
+        el.ondragover = (e) => { e.preventDefault(); };
+        el.ondrop = (e) => { e.preventDefault(); if(e.dataTransfer.files[0]) fn(e.dataTransfer.files[0]); };
     };
-
     setup('drop-enc', encryptFile);
     setup('drop-dec', decryptFile);
 
